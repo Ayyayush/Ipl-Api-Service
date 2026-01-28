@@ -1,12 +1,26 @@
-# Python cache
+# ================================
+# Python cache / compiled files
+# ================================
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
+# ================================
 # Virtual environment
+# ================================
 venv/
 .env
 
-# OS files
+# ================================
+# Large datasets (DO NOT PUSH)
+# ================================
+data/*.csv
+
+# ================================
+# OS / Editor files
+# ================================
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
