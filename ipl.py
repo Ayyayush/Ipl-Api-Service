@@ -1,6 +1,7 @@
 import pandas as pd
-from pathlib import Path
+from pathlib import Path     
 from typing import Union
+import matplotlib.pyplot as plt
 
 # ======================================================
 # BASE PATH
@@ -99,12 +100,137 @@ def get_match_level_df():
         .first()
         .reset_index()
     )
-
-    match_df = teams_per_match.merge(winners, on="match_id", how="left")
+    
+    match_df = teams_per_match.merge(
+    winners,
+    on="match_id",
+    how="left"
+    )
 
     match_df.rename(columns={"match_won_by": "winner"}, inplace=True)
 
     return match_df[["match_id", "team1", "team2", "winner"]]
+
+
+
+
+
+
+# ======================================================
+# PLOTTING
+# ======================================================
+
+def plot_total_matches_per_team():
+    df = get_match_level_df()
+
+    # Count matches per team (team1 + team2)
+    team_counts = (
+        pd.concat([df["team1"], df["team2"]])
+        .value_counts()
+        .sort_values(ascending=False)
+    )
+
+    # Plot
+    plt.figure(figsize=(12, 6))
+    team_counts.plot(kind="bar")
+    plt.xlabel("Team")
+    plt.ylabel("Matches Played")
+    plt.title("Total Matches Played by Each Team (IPL)")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+    
+
+
+def plot_total_wins_per_team():
+    df = get_match_level_df()
+
+    # Count wins per team (ignore no-result matches)
+    win_counts = (
+        df["winner"]
+        .dropna()
+        .value_counts()
+        .sort_values(ascending=False)
+    )
+
+    # Plot
+    plt.figure(figsize=(12, 6))
+    win_counts.plot(kind="bar")
+    plt.xlabel("Team")
+    plt.ylabel("Wins")
+    plt.title("Total Wins by Each Team (IPL)")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+def plot_wins_vs_losses_per_team():
+    df = get_match_level_df()
+
+    # Ignore no-result matches
+    valid_matches = df.dropna(subset=["winner"])
+
+    # Wins per team
+    wins = valid_matches["winner"].value_counts()
+
+    # Total matches per team (reuse earlier logic)
+    total_matches = (
+        pd.concat([df["team1"], df["team2"]])
+        .value_counts()
+    )
+
+    # Losses = total matches - wins
+    losses = total_matches.subtract(wins, fill_value=0)
+
+    # Combine into a DataFrame
+    stats_df = pd.DataFrame({
+        "Wins": wins,
+        "Losses": losses
+    }).fillna(0)
+
+    # Sort by wins
+    stats_df = stats_df.sort_values(by="Wins", ascending=False)
+
+    # Plot stacked bar chart
+    plt.figure(figsize=(12, 6))
+    stats_df.plot(
+        kind="bar",
+        stacked=True
+    )
+
+    plt.xlabel("Team")
+    plt.ylabel("Matches")
+    plt.title("Wins vs Losses by Each Team (IPL)")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+def plot_team_vs_team(team1, team2):
+    
+    # Get head-to-head stats using existing logic
+    stats = team_vs_team(team1, team2)
+
+    # Extract values
+    teams = [team1, team2]
+    wins = [stats[team1], stats[team2]]
+
+    # Plot
+    plt.figure(figsize=(6, 5))
+    plt.bar(teams, wins)
+
+    plt.xlabel("Teams")
+    plt.ylabel("Wins")
+    plt.title(f"Head-to-Head: {team1} vs {team2}")
+    plt.tight_layout()
+    plt.show()
+
+
+
 
 
 
@@ -141,6 +267,9 @@ def team_vs_team(team1, team2):
         team2: int(sum(wins.get(t, 0) for t in t2)),
         "no_result": int(temp_df["winner"].isna().sum())
     }
+
+
+
 
 
 # ======================================================
@@ -189,6 +318,7 @@ def team_record(team):
     }
 
 
+
 # ======================================================
 # BATTING RECORD (TEAM LEVEL)
 # ======================================================
@@ -212,6 +342,8 @@ def batting_record(team):
         "noResult": no_result,
         "note": "Derived from match outcomes, not pure batting stats"
     }
+
+
 
 
 # ======================================================
@@ -242,3 +374,11 @@ def bowling_record(team):
         "noResult": no_result,
         "note": "Derived from match outcomes"
     }
+
+
+
+if __name__ == "__main__":
+    plot_total_matches_per_team()
+    plot_total_wins_per_team()
+    plot_wins_vs_losses_per_team()
+    plot_team_vs_team("RCB", "MI")
